@@ -107,13 +107,78 @@ const ignored = [
   tags.function,
   tags.standard,
   tags.local,
-  tags.special];
+  tags.special
+];
 
-// Remap tag names. And also handle blockquotes
-const tagClassMap = HighlightStyle.define(Object.entries(tags)
-  .filter(([_key, value]) => !ignored.includes(value)).map(([key, value]) => {
-    return { tag: value, class: `cm-${key}` }
-  }))
+const prismMap = (tag) => {
+  let direct
+  switch (tag) {
+    case "className":
+      direct = "class-name"
+      break;
+    case "bool":
+      direct = "boolean"
+      break;
+    case "number": case "integer": case "float": case "atom": case "unit": case "modifier":
+      direct = "number"
+      break;
+    case "string": case "literal":
+      direct = "string"
+      break;
+    case "character":
+      direct = "char"
+      break;
+    case "regexp":
+      direct = "regex"
+      break;
+    case "constant":
+      direct = "constant"
+      break;
+    case "function":
+      direct = "function"
+      break;
+    case "special": case "annotation": case "escape":
+      direct = "important"
+      break;
+    case "standard":
+      direct = "builtin"
+      break;
+    case "punctuation": case "separator": case "bracket": case "angleBracket":
+    case "squareBracket": case "paren": case "brace":
+      direct = "punctuation"
+      break;
+    case "self": case "null":
+      direct = "keyword"
+      break;
+    case "propertyName":
+      direct = "property"
+      break;
+    case "variableName":
+      direct = "variable"
+      break;
+    case "namespace":
+      direct = "namespace"
+      break;
+    case "meta":
+      direct = "meta"
+      break;
+    case "labelName":
+      direct = "label"
+      break;
+  }
+  if (!direct) {
+    if (tag.toLowerCase().includes("comment")) {
+      direct = "comment"
+    } else if (tag.toLowerCase().includes("operator")) {
+      direct = "operator"
+    } else if (tag.toLowerCase().includes("keyword")) {
+      direct = "keyword"
+    }
+  }
+  if (direct) {
+    return `token ${direct}`
+  }
+};
 
 const ChatEditorKeys = onenter => [
   {
@@ -136,6 +201,7 @@ class MarkdownEditor {
    *                    - listeners: Listeners for dom events
    *                    - maxLength: Max character length
    *                    - editable: If the editor can be edited
+   *                    - highlightmap: A function that should map a tag to its css class
    */
   constructor(textarea, options) {
     if (!options) {
@@ -149,12 +215,12 @@ class MarkdownEditor {
     let updateListenerExtension = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         for (var listener of this.eventListener.input) {
-          listener({element: this.codemirror.dom, codemirror: this.codemirror, value: this.value()})
+          listener({ element: this.codemirror.dom, codemirror: this.codemirror, value: this.value() })
         }
       }
       if (update.focusChanged || update.selectionSet) {
         for (var listener of this.eventListener.selection) {
-          listener({element: this.codemirror.dom, codemirror: this.codemirror, selection: update.state.selection})
+          listener({ element: this.codemirror.dom, codemirror: this.codemirror, selection: update.state.selection })
         }
       }
     });
@@ -167,6 +233,19 @@ class MarkdownEditor {
 
     let filter = tr => !options.maxLength || tr.newDoc.length <= options.maxLength;
 
+    let highlights = Object.entries(tags).map(([key, value]) => {
+      var clss
+      if (options.highlightmap) {
+        clss = options.highlightmap(key)
+      } else if (!ignored.includes(value)) {
+        clss = `cfm-${key}`
+      }
+      if (!clss) {
+        return undefined;
+      }
+      return { tag: value, class: `${clss}` }
+    }).filter(e => e !== undefined);
+
     this.codemirror = new EditorView({
       extensions: [
         minimalSetup,
@@ -176,7 +255,7 @@ class MarkdownEditor {
           completeHTMLTags: false,
         }),
         NodeProcessor,
-        syntaxHighlighting(tagClassMap),
+        syntaxHighlighting(HighlightStyle.define(highlights)),
         this.placeholderHolder.of(placeholder(placeholderTxt)),
         this.editable.of(EditorView.editable.of(!('editable' in options) || options.editable)),
         updateListenerExtension,
@@ -189,7 +268,6 @@ class MarkdownEditor {
 
     var element = textarea.parentNode || textarea;
     if (textarea !== document.body) {
-      console.log(textarea)
       element.insertBefore(this.codemirror.dom, textarea)
       textarea.style.display = "none"
     } else {
@@ -246,5 +324,7 @@ class MarkdownEditor {
   }
 }
 
-self.ChatEditorKeys = ChatEditorKeys;
 self.MarkdownEditor = MarkdownEditor;
+MarkdownEditor.CodeMirrorTags = tags;
+MarkdownEditor.ChatEditorKeys = ChatEditorKeys;
+MarkdownEditor.PrismMap = prismMap;

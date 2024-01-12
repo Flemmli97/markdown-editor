@@ -5,7 +5,7 @@
   "main": "src/js/editor.js",
   "scripts": {
     "build": "rollup -c",
-    "dev": "http-server ./ -o /example"
+    "dev": "http-server ./ -o /example -c-1"
   },
   "type": "module",
   "author": "Flemmli97",

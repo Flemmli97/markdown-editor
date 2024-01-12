@@ -135,12 +135,13 @@ class MarkdownEditor {
    *                    - keys: Custom keybindings to use
    *                    - listeners: Listeners for dom events
    *                    - maxLength: Max character length
+   *                    - editable: If the editor can be edited
    */
   constructor(textarea, options) {
     if (!options) {
       options = {};
     }
-    var placeholderTxt = options.placeholder ? options.placeholder : "...";
+    var placeholderTxt = options.placeholder || "...";
     var customExtensions = options.extensions || [];
     this.placeholderHolder = new Compartment();
     this.editable = new Compartment();

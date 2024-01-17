@@ -110,7 +110,7 @@ const ignored = [
   tags.special
 ];
 
-const prismMap = (tag) => {
+const prismMap = (tag, value) => {
   let direct
   switch (tag) {
     case "className":
@@ -177,6 +177,8 @@ const prismMap = (tag) => {
   }
   if (direct) {
     return `token ${direct}`
+  }  else if (!ignored.includes(value)) {
+    return `cm-${tag}`
   }
 };
 
@@ -236,9 +238,9 @@ class MarkdownEditor {
     let highlights = Object.entries(tags).map(([key, value]) => {
       var clss
       if (options.highlightmap) {
-        clss = options.highlightmap(key)
+        clss = options.highlightmap(key, value)
       } else if (!ignored.includes(value)) {
-        clss = `cfm-${key}`
+        clss = `cm-${key}`
       }
       if (!clss) {
         return undefined;

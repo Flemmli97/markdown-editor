@@ -27,7 +27,14 @@ function processNode(state, node, builder) {
     builder.add(node.from, node.to, codeBlockMarkerInline)
   } else if (node.type.is("Blockquote")) {
     var firstLine = state.doc.lineAt(node.from).number;
-    builder.add(state.doc.line(firstLine).from, state.doc.line(firstLine).from, blockQuoteMarker)
+    var lastLine = state.doc.lineAt(node.to).number;
+    for (let i = firstLine; i <= lastLine; i++) {
+      builder.add(
+        state.doc.line(i).from,
+        state.doc.line(i).from,
+        blockQuoteMarker
+      );
+    }
   }
 }
 const NodeProcessor = StateField.define({

@@ -11,6 +11,8 @@ import { insertNewlineAndIndent } from '@codemirror/commands';
 const codeBlockMarker = Decoration.line({ class: "cm-codeblock" });
 const codeBlockMarkerInline = Decoration.mark({ class: "cm-codeblock" })
 const blockQuoteMarker = Decoration.line({ class: "cm-blockquote" })
+const url = Decoration.mark({ class: "cm-url" })
+const linkRegex = /((?:(?:www\.)|(?:https?:\/\/))[\w-]+(?:\.[\w-]+)+(?:\/[^)\s<]*)*)|((mailto: {0,1})([\w.+-]+@[\w-]+(?:\.[\w.-]+)+))/gy;
 
 function processNode(state, node, builder) {
   if (node.type.is("FencedCode")) {
@@ -37,13 +39,24 @@ function processNode(state, node, builder) {
     }
   }
 }
-const NodeProcessor = StateField.define({
+
+function processURL(state, node, builder) {
+  if (node.type.is("URL")) {
+    if (state.sliceDoc(node.from, node.to).match(linkRegex)) {
+      builder.add(node.from, node.to, url)
+    }
+  }
+}
+
+const NodeProcessor = (node_processors) => StateField.define({
   create(state) {
     const builder = new RangeSetBuilder();
     syntaxTree(state).iterate({
       enter(node) {
         node.type
-        processNode(state, node, builder);
+        for (var processor of node_processors) {
+          processor(state, node, builder)
+        }
       },
     });
     return builder.finish();
@@ -53,7 +66,9 @@ const NodeProcessor = StateField.define({
     decorations = decorations.map(tr.changes);
     syntaxTree(tr.state).iterate({
       enter(node) {
-        processNode(tr.state, node, builder);
+        for (var processor of node_processors) {
+          processor(tr.state, node, builder)
+        }
       },
     });
     decorations = RangeSet.join([builder.finish()]);
@@ -211,6 +226,7 @@ class MarkdownEditor {
    *                    - maxLength: Max character length
    *                    - editable: If the editor can be edited
    *                    - highlightmap: A function that should map a tag to its css class
+   *                    - only_autolink: Only show AutoLink. Things like [title](link) will only highlight link
    */
   constructor(textarea, options) {
     if (!options) {
@@ -244,6 +260,10 @@ class MarkdownEditor {
 
     let highlights = Object.entries(tags).map(([key, value]) => {
       var clss
+      // Disable link marks
+      if (options.only_autolink && (value === tags.link || value === tags.url)) {
+        return undefined;
+      }
       if (options.highlightmap) {
         clss = options.highlightmap(key, value)
       } else if (!ignored.includes(value)) {
@@ -263,7 +283,7 @@ class MarkdownEditor {
           extensions: [Strikethrough, Autolink],
           completeHTMLTags: false,
         }),
-        NodeProcessor,
+        NodeProcessor(options.only_autolink ? [processNode, processURL] : [processNode]),
         syntaxHighlighting(HighlightStyle.define(highlights)),
         this.placeholderHolder.of(placeholder(placeholderTxt)),
         this.editable.of(EditorView.editable.of(!('editable' in options) || options.editable)),

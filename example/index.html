@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <body>
+  <link rel="stylesheet" href="markdown.css">
   <div>
     <textarea id="rich-editor"></textarea>
   </div>
   <script charset="utf-8" type="text/javascript" src="../dist/editor.js"></script>
   <script>
-    const editor = new MarkdownEditor(document.getElementById("rich-editor"), {placeholder: "Editor with 500 char length",maxLength: 500})
+    const editor = new MarkdownEditor(document.getElementById("rich-editor"), {placeholder: "Editor with 500 char length",maxLength: 500, only_autolink: true})
   </script>
 </body>
 

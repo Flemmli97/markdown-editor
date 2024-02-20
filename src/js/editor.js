@@ -259,18 +259,15 @@ class MarkdownEditor {
     let filter = tr => !options.maxLength || tr.newDoc.length <= options.maxLength;
 
     let highlights = Object.entries(tags).map(([key, value]) => {
-      var clss
+      var clss = " "
       // Disable link marks
       if (options.only_autolink && (value === tags.link || value === tags.url)) {
-        return undefined;
+        return { tag: value, class: " " };
       }
       if (options.highlightmap) {
         clss = options.highlightmap(key, value)
       } else if (!ignored.includes(value)) {
         clss = `cm-${key}`
-      }
-      if (!clss) {
-        return undefined;
       }
       return { tag: value, class: `${clss}` }
     }).filter(e => e !== undefined);

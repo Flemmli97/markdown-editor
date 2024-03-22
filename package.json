@@ -2,7 +2,7 @@
   "name": "markdown-editor",
   "version": "1.0.0",
   "description": "Codemirror editor using prism",
-  "main": "src/js/editor.js",
+  "main": "src/js/editor_core.ts",
   "scripts": {
     "build": "rollup -c",
     "dev": "http-server ./ -o /example -c-1"

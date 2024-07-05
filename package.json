@@ -6,7 +6,8 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "http-server ./ -o /example -c-1",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "format": "prettier --write 'src/js/*.{js,ts}'"
   },
   "type": "module",
   "author": "Flemmli97",
@@ -23,6 +24,7 @@
     "@rollup/plugin-typescript": "^11.1.6",
     "codemirror": "^6.0.1",
     "http-server": "^14.1.1",
+    "prettier": "^3.3.2",
     "tslib": "^2.6.3",
     "typescript": "^5.5.3"
   }

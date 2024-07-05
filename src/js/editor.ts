@@ -1,9 +1,9 @@
-import { MarkdownEditor } from "./editor_core";
+import { MarkdownEditor } from "./editor_core"
 
 declare global {
     interface Window {
-        MarkdownEditor: typeof MarkdownEditor;
+        MarkdownEditor: typeof MarkdownEditor
     }
 }
 
-window.MarkdownEditor = MarkdownEditor;
+window.MarkdownEditor = MarkdownEditor

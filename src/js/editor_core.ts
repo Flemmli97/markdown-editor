@@ -1,5 +1,5 @@
 import { minimalSetup } from "codemirror"
-import { EditorView, placeholder, Decoration, keymap, type KeyBinding, type DOMEventHandlers } from "@codemirror/view"
+import { EditorView, placeholder, Decoration, keymap, type KeyBinding, type DOMEventHandlers, ViewUpdate } from "@codemirror/view"
 import { EditorState, Compartment, RangeSet, RangeSetBuilder, RangeValue, StateField, Prec, type Extension } from "@codemirror/state"
 import { markdown } from "@codemirror/lang-markdown"
 import { languages } from "@codemirror/language-data"
@@ -223,6 +223,15 @@ const ChatEditorKeys = (onenter: () => void) => [
     { key: "Shift-Enter", run: insertNewlineAndIndent },
 ]
 
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
+    if (wait === 0) return func
+    let timeout: number
+    return function (...args: Parameters<T>): void {
+        if (timeout) clearTimeout(timeout)
+        timeout = setTimeout(() => func.apply(args), wait)
+    }
+}
+
 class MarkdownEditor {
     static CodeMirrorTags: {
         [key: string]: Tag | ((tag: Tag) => Tag)
@@ -259,6 +268,7 @@ class MarkdownEditor {
             only_autolink?: boolean
             highlightmap?: (tag: string, value: Tag | ((tag: Tag) => Tag)) => string | undefined
             editable?: boolean
+            updateRate?: number
         }
     ) {
         if (!options) {
@@ -268,17 +278,30 @@ class MarkdownEditor {
         var customExtensions = options.extensions || []
         this.placeholderHolder = new Compartment()
         this.editable = new Compartment()
+        var updateRate = options.updateRate || 0
 
+        let inputUpdate = debounce(() => {
+            for (var listener of this.eventListener.input) {
+                listener({ element: this.codemirror.dom, codemirror: this.codemirror, value: this.value() })
+            }
+        }, updateRate)
+
+        let selectionUpdate = debounce((update: ViewUpdate) => {
+            for (var listener of this.eventListener.selection) {
+                listener({ element: this.codemirror.dom, codemirror: this.codemirror, selection: update.state.selection })
+            }
+        }, updateRate)
+
+        let previousText = ""
         let updateListenerExtension = EditorView.updateListener.of(update => {
-            if (update.docChanged) {
-                for (var listener of this.eventListener.input) {
-                    listener({ element: this.codemirror.dom, codemirror: this.codemirror, value: this.value() })
-                }
+            // Whenever a user types something 2 updates are fired
+            // Thus fire an input update only if the text changed
+            if (update.docChanged && previousText !== this.value()) {
+                previousText = this.value() as string
+                inputUpdate()
             }
             if (update.focusChanged || update.selectionSet) {
-                for (var listener of this.eventListener.selection) {
-                    listener({ element: this.codemirror.dom, codemirror: this.codemirror, selection: update.state.selection })
-                }
+                selectionUpdate(update)
             }
         })
 
